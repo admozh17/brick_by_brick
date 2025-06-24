@@ -135,4 +135,5 @@ result.json
 *.mov
 *.mkv
 temp/
-tmp/ 
+tmp/
+chroma_db/ 

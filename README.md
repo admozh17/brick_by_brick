@@ -10,16 +10,19 @@ An advanced information extraction system for short-form videos (Instagram Reels
 - **Feedback analysis**: Extracts ratings, reviews, and key takeaways
 - **Compilation support**: Handles videos featuring multiple places/activities
 - **Geocoding**: Optional Google Maps integration for address validation
+- **Vector database storage**: ChromaDB integration for semantic search and retrieval
+- **Semantic search**: Find similar places and activities using natural language queries
 
 ## Architecture
 
-The system consists of three main components:
+The system consists of four main components:
 
 ### 1. `agent.py` - Main Orchestrator
 - Downloads videos from various platforms
 - Coordinates speech/OCR/caption processing
 - Manages the LLM parsing pipeline
 - Handles geocoding and data formatting
+- Stores results in vector database
 
 ### 2. `extractor.py` - Video Processing
 - **Video download**: Uses yt-dlp for platform-agnostic video downloading
@@ -38,6 +41,12 @@ The system consists of three main components:
   - Geographic information
   - Ratings and feedback
   - Key takeaways and insights
+
+### 4. `vector_store.py` - Vector Database
+- ChromaDB integration for persistent storage
+- Semantic search capabilities using sentence transformers
+- Metadata indexing for efficient retrieval
+- Support for place name, genre, and semantic queries
 
 ## Installation
 
@@ -63,6 +72,29 @@ export OPENAI_API_KEY="your_openai_api_key"
 ### Basic Usage
 ```bash
 python agent.py --url "https://www.instagram.com/reel/..." --out result.json
+```
+
+### Skip Vector Database Storage
+```bash
+python agent.py --url "https://www.instagram.com/reel/..." --out result.json --no-vector-store
+```
+
+### Search Stored Places
+```bash
+# Semantic search
+python search_places.py "Chinese restaurant with good atmosphere"
+
+# Search by place name
+python search_places.py "China Pearl" --by-name
+
+# Search by genre
+python search_places.py "restaurant" --by-genre
+
+# Show database statistics
+python search_places.py --stats
+
+# Get JSON output
+python search_places.py "pizza" --json
 ```
 
 ### Supported Platforms
@@ -93,6 +125,34 @@ The system generates a structured JSON output with:
 }
 ```
 
+## Vector Database Features
+
+### Storage
+- Automatic storage of extracted place information
+- Metadata indexing for efficient queries
+- Source URL tracking for video references
+
+### Search Capabilities
+- **Semantic search**: Find places using natural language descriptions
+- **Exact name matching**: Search by specific place names
+- **Genre filtering**: Find places by category (restaurant, activity, etc.)
+- **Similarity scoring**: Results ranked by relevance
+
+### Example Searches
+```bash
+# Find romantic restaurants
+python search_places.py "romantic date night restaurant"
+
+# Find outdoor activities
+python search_places.py "outdoor adventure activities"
+
+# Find specific cuisine
+python search_places.py "authentic Italian food"
+
+# Find places with good service
+python search_places.py "excellent customer service"
+```
+
 ## Dependencies
 
 - `openai` - LLM API access
@@ -103,12 +163,21 @@ The system generates a structured JSON output with:
 - `googlemaps` - Geocoding
 - `pydantic` - Data validation
 - `tqdm` - Progress bars
+- `chromadb` - Vector database
+- `sentence-transformers` - Semantic embeddings
 
 ## Configuration
 
 The system can be configured through environment variables:
 - `GOOGLE_API_KEY`: Required for geocoding functionality
 - `OPENAI_API_KEY`: Required for LLM processing
+
+## Data Storage
+
+The vector database is stored locally in the `./chroma_db` directory. This includes:
+- Embeddings for semantic search
+- Metadata for each stored place
+- Index files for efficient retrieval
 
 ## License
 

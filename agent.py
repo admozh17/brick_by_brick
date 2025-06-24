@@ -6,6 +6,7 @@ Orchestrates:
   • Speech/OCR/caption fusion
   • LLM parsing (llm_parser.py)
   • Optional geocoding (extractor.py helpers)
+  • Vector database storage (vector_store.py)
 
 Then compacts the rich output into a *lean* summary JSON with:
   • place_name
@@ -32,6 +33,7 @@ from extractor import (
     geocode_place,
 )
 from llm_parser import parse_place_info
+from vector_store import VectorStore
 
 
 # --------------------------------------------------------------------------------------
@@ -186,6 +188,9 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", required=True, help="Reel / TikTok / Short URL")
     ap.add_argument("--out", default="result.json")
+    ap.add_argument(
+        "--no-vector-store", action="store_true", help="Skip storing in vector database"
+    )
     args = ap.parse_args()
 
     try:
@@ -202,6 +207,15 @@ def main():
         pathlib.Path(args.out).write_text(
             json.dumps(summary, indent=2, ensure_ascii=False)
         )
+
+        # Store in vector database
+        if not args.no_vector_store:
+            try:
+                vector_store = VectorStore()
+                doc_ids = vector_store.store_results(summary, args.url)
+                print(f"🗄️ Stored in vector database with IDs: {doc_ids}")
+            except Exception as e:
+                print(f"⚠️ Failed to store in vector database: {e}")
 
         print(f"✅ Wrote lean summary to {args.out}")
         for i, a in enumerate(summary["activities"], 1):
