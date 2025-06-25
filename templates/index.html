@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}Home - Video Information Extractor{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Hero Section -->
+    <div class="text-center py-12">
+        <h1 class="text-4xl font-bold text-gray-900 mb-4">
+            Extract Place Information from Videos
+        </h1>
+        <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+            Upload videos or provide URLs to automatically extract information about places, restaurants, 
+            activities, and more. Powered by AI and semantic search.
+        </p>
+    </div>
+
+    <!-- Upload Section -->
+    <div class="grid md:grid-cols-2 gap-8">
+        <!-- File Upload -->
+        <div class="bg-white rounded-lg shadow-lg p-6 card-hover">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-upload text-2xl text-blue-500 mr-3"></i>
+                <h2 class="text-2xl font-semibold text-gray-800">Upload Video</h2>
+            </div>
+            
+            <form id="uploadForm" enctype="multipart/form-data" class="space-y-4">
+                <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                    <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 mb-2">Drag and drop your video here, or click to browse</p>
+                    <input type="file" id="videoFile" name="video" accept="video/*" class="hidden" required>
+                    <button type="button" onclick="document.getElementById('videoFile').click()" 
+                            class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors">
+                        Choose File
+                    </button>
+                </div>
+                
+                <div id="fileInfo" class="hidden bg-gray-50 p-3 rounded-lg">
+                    <p class="text-sm text-gray-600">
+                        <i class="fas fa-file-video mr-2"></i>
+                        <span id="fileName"></span>
+                    </p>
+                </div>
+                
+                <button type="submit" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-3 px-6 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all font-semibold">
+                    <i class="fas fa-magic mr-2"></i>Extract Information
+                </button>
+            </form>
+        </div>
+
+        <!-- URL Input -->
+        <div class="bg-white rounded-lg shadow-lg p-6 card-hover">
+            <div class="flex items-center mb-4">
+                <i class="fas fa-link text-2xl text-green-500 mr-3"></i>
+                <h2 class="text-2xl font-semibold text-gray-800">Process URL</h2>
+            </div>
+            
+            <form id="urlForm" class="space-y-4">
+                <div>
+                    <label for="videoUrl" class="block text-sm font-medium text-gray-700 mb-2">
+                        Video URL (Instagram, TikTok, YouTube, etc.)
+                    </label>
+                    <input type="url" id="videoUrl" name="url" 
+                           placeholder="https://www.instagram.com/reel/..." 
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           required>
+                </div>
+                
+                <button type="submit" class="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white py-3 px-6 rounded-lg hover:from-green-600 hover:to-teal-700 transition-all font-semibold">
+                    <i class="fas fa-download mr-2"></i>Process URL
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Results Section -->
+    <div id="resultsSection" class="hidden">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+                <i class="fas fa-map-marker-alt text-blue-500 mr-2"></i>Extracted Places
+            </h3>
+            <div id="resultsContainer" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <!-- Statistics Section -->
+    {% if stats %}
+    <div class="grid md:grid-cols-3 gap-6">
+        <div class="bg-white rounded-lg shadow-lg p-6 text-center card-hover">
+            <i class="fas fa-database text-3xl text-blue-500 mb-3"></i>
+            <h3 class="text-2xl font-bold text-gray-800">{{ stats.total_places or 0 }}</h3>
+            <p class="text-gray-600">Total Places</p>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 text-center card-hover">
+            <i class="fas fa-utensils text-3xl text-green-500 mb-3"></i>
+            <h3 class="text-2xl font-bold text-gray-800">{{ stats.genre_distribution.restaurant or 0 }}</h3>
+            <p class="text-gray-600">Restaurants</p>
+        </div>
+        
+        <div class="bg-white rounded-lg shadow-lg p-6 text-center card-hover">
+            <i class="fas fa-hiking text-3xl text-purple-500 mb-3"></i>
+            <h3 class="text-2xl font-bold text-gray-800">{{ stats.genre_distribution.activity or 0 }}</h3>
+            <p class="text-gray-600">Activities</p>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Recent Places -->
+    {% if recent_places %}
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <h3 class="text-2xl font-semibold text-gray-800 mb-4">
+            <i class="fas fa-clock text-blue-500 mr-2"></i>Recently Added Places
+        </h3>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {% for place in recent_places %}
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+                <h4 class="font-semibold text-gray-800 mb-2">{{ place.metadata.place_name }}</h4>
+                <p class="text-sm text-gray-600 mb-2">
+                    <i class="fas fa-tag mr-1"></i>{{ place.metadata.genre }}
+                    {% if place.metadata.category_detail %}
+                    <span class="text-gray-500">• {{ place.metadata.category_detail }}</span>
+                    {% endif %}
+                </p>
+                {% if place.metadata.address %}
+                <p class="text-sm text-gray-500 mb-2">
+                    <i class="fas fa-map-marker-alt mr-1"></i>{{ place.metadata.address }}
+                </p>
+                {% endif %}
+                <p class="text-xs text-gray-400">
+                    <i class="fas fa-lightbulb mr-1"></i>{{ place.metadata.takeaways_count }} takeaways
+                </p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // File upload handling
+    const fileInput = document.getElementById('videoFile');
+    const fileInfo = document.getElementById('fileInfo');
+    const fileName = document.getElementById('fileName');
+    
+    fileInput.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+            fileName.textContent = file.name;
+            fileInfo.classList.remove('hidden');
+        } else {
+            fileInfo.classList.add('hidden');
+        }
+    });
+
+    // Drag and drop functionality
+    const dropZone = document.querySelector('.border-dashed');
+    
+    dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        dropZone.classList.add('border-blue-400', 'bg-blue-50');
+    });
+    
+    dropZone.addEventListener('dragleave', function(e) {
+        e.preventDefault();
+        dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+    });
+    
+    dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        dropZone.classList.remove('border-blue-400', 'bg-blue-50');
+        
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            fileName.textContent = files[0].name;
+            fileInfo.classList.remove('hidden');
+        }
+    });
+
+    // Upload form submission
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const submitBtn = this.querySelector('button[type="submit"]');
+        
+        setLoading(submitBtn, true);
+        
+        try {
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast(result.message, 'success');
+                displayResults(result.result);
+            } else {
+                showToast(result.error, 'error');
+            }
+        } catch (error) {
+            showToast('An error occurred while processing the video', 'error');
+        } finally {
+            setLoading(submitBtn, false);
+        }
+    });
+
+    // URL form submission
+    document.getElementById('urlForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const url = document.getElementById('videoUrl').value;
+        const submitBtn = this.querySelector('button[type="submit"]');
+        
+        setLoading(submitBtn, true);
+        
+        try {
+            const response = await fetch('/process-url', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ url: url })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast(result.message, 'success');
+                displayResults(result.result);
+            } else {
+                showToast(result.error, 'error');
+            }
+        } catch (error) {
+            showToast('An error occurred while processing the URL', 'error');
+        } finally {
+            setLoading(submitBtn, false);
+        }
+    });
+
+    // Display results
+    function displayResults(result) {
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsContainer = document.getElementById('resultsContainer');
+        
+        resultsContainer.innerHTML = '';
+        
+        if (result.activities && result.activities.length > 0) {
+            result.activities.forEach((activity, index) => {
+                const activityCard = document.createElement('div');
+                activityCard.className = 'border border-gray-200 rounded-lg p-4 bg-gray-50';
+                activityCard.innerHTML = `
+                    <div class="flex items-start justify-between mb-3">
+                        <h4 class="font-semibold text-lg text-gray-800">${activity.place_name || 'Unknown Place'}</h4>
+                        <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                            ${activity.genre || 'Unknown'}
+                        </span>
+                    </div>
+                    
+                    ${activity.category_detail ? `
+                        <p class="text-sm text-gray-600 mb-2">
+                            <i class="fas fa-tag mr-1"></i>${activity.category_detail}
+                        </p>
+                    ` : ''}
+                    
+                    ${activity.address ? `
+                        <p class="text-sm text-gray-600 mb-3">
+                            <i class="fas fa-map-marker-alt mr-1"></i>${activity.address}
+                        </p>
+                    ` : ''}
+                    
+                    ${activity.key_takeaways && activity.key_takeaways.length > 0 ? `
+                        <div class="mb-3">
+                            <h5 class="text-sm font-medium text-gray-700 mb-2">Key Takeaways:</h5>
+                            <ul class="text-sm text-gray-600 space-y-1">
+                                ${activity.key_takeaways.map(takeaway => `
+                                    <li class="flex items-start">
+                                        <i class="fas fa-check text-green-500 mr-2 mt-1"></i>
+                                        ${takeaway}
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    ` : ''}
+                `;
+                
+                resultsContainer.appendChild(activityCard);
+            });
+        } else {
+            resultsContainer.innerHTML = `
+                <div class="text-center py-8 text-gray-500">
+                    <i class="fas fa-info-circle text-3xl mb-3"></i>
+                    <p>No places found in the video</p>
+                </div>
+            `;
+        }
+        
+        resultsSection.classList.remove('hidden');
+        resultsSection.scrollIntoView({ behavior: 'smooth' });
+    }
+</script>
+{% endblock %} 

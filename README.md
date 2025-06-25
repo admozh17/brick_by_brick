@@ -12,10 +12,11 @@ An advanced information extraction system for short-form videos (Instagram Reels
 - **Geocoding**: Optional Google Maps integration for address validation
 - **Vector database storage**: ChromaDB integration for semantic search and retrieval
 - **Semantic search**: Find similar places and activities using natural language queries
+- **Web interface**: Modern, responsive web application for easy interaction
 
 ## Architecture
 
-The system consists of four main components:
+The system consists of five main components:
 
 ### 1. `agent.py` - Main Orchestrator
 - Downloads videos from various platforms
@@ -48,6 +49,13 @@ The system consists of four main components:
 - Metadata indexing for efficient retrieval
 - Support for place name, genre, and semantic queries
 
+### 5. `app.py` - Web Application
+- Flask-based web interface
+- Video upload and URL processing
+- Real-time search and browsing
+- Responsive design with modern UI
+- RESTful API endpoints
+
 ## Installation
 
 1. Clone the repository:
@@ -69,32 +77,27 @@ export OPENAI_API_KEY="your_openai_api_key"
 
 ## Usage
 
-### Basic Usage
+### Web Interface (Recommended)
+Start the web application:
 ```bash
-python agent.py --url "https://www.instagram.com/reel/..." --out result.json
+python3 run_app.py
 ```
 
-### Skip Vector Database Storage
+Then open your browser to `http://localhost:8080` to access the web interface.
+
+### Command Line Interface
 ```bash
-python agent.py --url "https://www.instagram.com/reel/..." --out result.json --no-vector-store
-```
+# Process a video URL
+python3 agent.py --url "https://www.instagram.com/reel/..." --out result.json
 
-### Search Stored Places
-```bash
-# Semantic search
-python search_places.py "Chinese restaurant with good atmosphere"
+# Skip vector database storage
+python3 agent.py --url "https://www.instagram.com/reel/..." --out result.json --no-vector-store
 
-# Search by place name
-python search_places.py "China Pearl" --by-name
-
-# Search by genre
-python search_places.py "restaurant" --by-genre
-
-# Show database statistics
-python search_places.py --stats
-
-# Get JSON output
-python search_places.py "pizza" --json
+# Search stored places
+python3 search_places.py "Chinese restaurant with good atmosphere"
+python3 search_places.py "China Pearl" --by-name
+python3 search_places.py "restaurant" --by-genre
+python3 search_places.py --stats
 ```
 
 ### Supported Platforms
@@ -102,6 +105,26 @@ python search_places.py "pizza" --json
 - TikTok
 - YouTube Shorts
 - Other platforms supported by yt-dlp
+
+## Web Interface Features
+
+### Home Page (`/`)
+- **Video Upload**: Drag and drop or browse for video files
+- **URL Processing**: Enter video URLs from social media platforms
+- **Real-time Results**: View extracted information immediately
+- **Statistics Dashboard**: See database overview and recent places
+
+### Search Page (`/search`)
+- **Semantic Search**: Find places using natural language
+- **Filtered Search**: Search by place name or genre
+- **Search Examples**: Quick access to common queries
+- **Similarity Scoring**: Results ranked by relevance
+
+### Places Page (`/places`)
+- **Browse All Places**: View all stored places with pagination
+- **Advanced Filtering**: Filter by genre, sort by various criteria
+- **Responsive Grid**: Beautiful card-based layout
+- **Quick Search**: Search bar for filtering results
 
 ## Output Format
 
@@ -141,16 +164,16 @@ The system generates a structured JSON output with:
 ### Example Searches
 ```bash
 # Find romantic restaurants
-python search_places.py "romantic date night restaurant"
+python3 search_places.py "romantic date night restaurant"
 
 # Find outdoor activities
-python search_places.py "outdoor adventure activities"
+python3 search_places.py "outdoor adventure activities"
 
 # Find specific cuisine
-python search_places.py "authentic Italian food"
+python3 search_places.py "authentic Italian food"
 
 # Find places with good service
-python search_places.py "excellent customer service"
+python3 search_places.py "excellent customer service"
 ```
 
 ## Dependencies
@@ -165,12 +188,16 @@ python search_places.py "excellent customer service"
 - `tqdm` - Progress bars
 - `chromadb` - Vector database
 - `sentence-transformers` - Semantic embeddings
+- `flask` - Web framework
+- `werkzeug` - WSGI utilities
 
 ## Configuration
 
 The system can be configured through environment variables:
 - `GOOGLE_API_KEY`: Required for geocoding functionality
 - `OPENAI_API_KEY`: Required for LLM processing
+- `FLASK_ENV`: Set to 'production' for production deployment
+- `SECRET_KEY`: Flask secret key for session management
 
 ## Data Storage
 
@@ -178,6 +205,29 @@ The vector database is stored locally in the `./chroma_db` directory. This inclu
 - Embeddings for semantic search
 - Metadata for each stored place
 - Index files for efficient retrieval
+
+## API Endpoints
+
+The web application provides the following REST API endpoints:
+
+- `GET /` - Main application page
+- `GET /search` - Search interface
+- `GET /places` - Places browsing interface
+- `POST /upload` - Upload and process video files
+- `POST /process-url` - Process videos from URLs
+- `GET /search?q=query` - Search API
+- `GET /places?page=1&per_page=20` - Places API with pagination
+- `GET /stats` - Database statistics
+- `GET /api/health` - Health check
+
+## Development
+
+To run the application in development mode:
+```bash
+python3 run_app.py
+```
+
+The application will be available at `http://localhost:8080` with auto-reload enabled.
 
 ## License
 

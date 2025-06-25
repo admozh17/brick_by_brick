@@ -1,0 +1,307 @@
+{% extends "base.html" %}
+
+{% block title %}All Places - Video Information Extractor{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Places Header -->
+    <div class="text-center">
+        <h1 class="text-4xl font-bold text-gray-900 mb-4">
+            <i class="fas fa-map-marker-alt text-blue-500 mr-3"></i>All Places
+        </h1>
+        <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+            Browse all places that have been extracted from videos. Use the search bar to filter results.
+        </p>
+    </div>
+
+    <!-- Search Bar -->
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="flex items-center space-x-4">
+            <div class="flex-1">
+                <input type="text" id="searchInput" 
+                       placeholder="Search places by name, genre, or description..."
+                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            </div>
+            <button onclick="searchPlaces()" class="bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition-colors">
+                <i class="fas fa-search mr-2"></i>Search
+            </button>
+        </div>
+    </div>
+
+    <!-- Places Grid -->
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <div class="flex items-center justify-between mb-6">
+            <h3 class="text-2xl font-semibold text-gray-800">
+                <i class="fas fa-list text-blue-500 mr-2"></i>Places
+            </h3>
+            <div class="text-sm text-gray-600">
+                <span id="totalCount">0</span> total places
+            </div>
+        </div>
+        
+        <div id="placesContainer" class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Places will be loaded here -->
+        </div>
+        
+        <!-- Loading State -->
+        <div id="loadingState" class="text-center py-12">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-600">Loading places...</p>
+        </div>
+        
+        <!-- Empty State -->
+        <div id="emptyState" class="hidden text-center py-12 text-gray-500">
+            <i class="fas fa-inbox text-4xl mb-4"></i>
+            <p class="text-lg">No places found</p>
+            <p class="text-sm">Try uploading a video or adjusting your search</p>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <div id="paginationContainer" class="hidden bg-white rounded-lg shadow-lg p-6">
+        <div class="flex items-center justify-between">
+            <div class="text-sm text-gray-600">
+                Showing <span id="showingStart">1</span> to <span id="showingEnd">10</span> of <span id="showingTotal">0</span> places
+            </div>
+            
+            <div class="flex items-center space-x-2">
+                <button id="prevPage" onclick="changePage(-1)" 
+                        class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                
+                <span id="pageInfo" class="px-4 py-2 text-sm text-gray-600">
+                    Page 1 of 1
+                </span>
+                
+                <button id="nextPage" onclick="changePage(1)" 
+                        class="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                    <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4">
+            <i class="fas fa-filter text-blue-500 mr-2"></i>Filters
+        </h3>
+        <div class="grid md:grid-cols-3 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Genre</label>
+                <select id="genreFilter" onchange="applyFilters()" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="">All Genres</option>
+                    <option value="restaurant">Restaurant</option>
+                    <option value="activity">Activity</option>
+                    <option value="hotel">Hotel</option>
+                    <option value="shop">Shop</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
+                <select id="sortBy" onchange="applyFilters()" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="timestamp">Date Added</option>
+                    <option value="place_name">Place Name</option>
+                    <option value="genre">Genre</option>
+                    <option value="takeaways_count">Takeaways Count</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Results Per Page</label>
+                <select id="perPage" onchange="applyFilters()" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    <option value="12">12</option>
+                    <option value="24">24</option>
+                    <option value="48">48</option>
+                </select>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let currentPage = 1;
+    let totalPages = 1;
+    let totalPlaces = 0;
+    let currentFilters = {};
+
+    // Load places on page load
+    document.addEventListener('DOMContentLoaded', function() {
+        loadPlaces();
+    });
+
+    // Load places from API
+    async function loadPlaces() {
+        const loadingState = document.getElementById('loadingState');
+        const placesContainer = document.getElementById('placesContainer');
+        const emptyState = document.getElementById('emptyState');
+        const paginationContainer = document.getElementById('paginationContainer');
+        
+        loadingState.classList.remove('hidden');
+        placesContainer.innerHTML = '';
+        emptyState.classList.add('hidden');
+        paginationContainer.classList.add('hidden');
+        
+        try {
+            const params = new URLSearchParams({
+                page: currentPage,
+                per_page: document.getElementById('perPage').value,
+                ...currentFilters
+            });
+            
+            const response = await fetch(`/places?${params}`);
+            const result = await response.json();
+            
+            if (result.success) {
+                displayPlaces(result.places, result.pagination);
+            } else {
+                showToast(result.error, 'error');
+            }
+        } catch (error) {
+            showToast('An error occurred while loading places', 'error');
+        } finally {
+            loadingState.classList.add('hidden');
+        }
+    }
+
+    // Display places in grid
+    function displayPlaces(places, pagination) {
+        const placesContainer = document.getElementById('placesContainer');
+        const emptyState = document.getElementById('emptyState');
+        const paginationContainer = document.getElementById('paginationContainer');
+        const totalCount = document.getElementById('totalCount');
+        
+        totalPlaces = pagination.total;
+        totalPages = pagination.pages;
+        currentPage = pagination.page;
+        
+        totalCount.textContent = totalPlaces;
+        
+        if (places.length === 0) {
+            emptyState.classList.remove('hidden');
+            paginationContainer.classList.add('hidden');
+            return;
+        }
+        
+        placesContainer.innerHTML = '';
+        
+        places.forEach(place => {
+            const placeCard = document.createElement('div');
+            placeCard.className = 'border border-gray-200 rounded-lg p-6 hover:shadow-lg transition-shadow card-hover';
+            
+            placeCard.innerHTML = `
+                <div class="flex items-start justify-between mb-4">
+                    <h4 class="text-lg font-semibold text-gray-800">${place.metadata.place_name || 'Unknown Place'}</h4>
+                    <span class="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-full">
+                        ${place.metadata.genre || 'Unknown'}
+                    </span>
+                </div>
+                
+                ${place.metadata.category_detail ? `
+                    <p class="text-sm text-gray-600 mb-3">
+                        <i class="fas fa-tag mr-1"></i>${place.metadata.category_detail}
+                    </p>
+                ` : ''}
+                
+                ${place.metadata.address ? `
+                    <p class="text-sm text-gray-600 mb-3">
+                        <i class="fas fa-map-marker-alt mr-1"></i>${place.metadata.address}
+                    </p>
+                ` : ''}
+                
+                <div class="mb-4">
+                    <h5 class="text-sm font-medium text-gray-700 mb-2">Key Takeaways (${place.metadata.takeaways_count}):</h5>
+                    <div class="text-sm text-gray-600 line-clamp-3">
+                        ${place.document.split('Key points: ')[1] || 'No takeaways available'}
+                    </div>
+                </div>
+                
+                <div class="flex items-center justify-between text-xs text-gray-500">
+                    <span>
+                        <i class="fas fa-calendar mr-1"></i>
+                        ${new Date(place.metadata.timestamp).toLocaleDateString()}
+                    </span>
+                    ${place.metadata.source_url ? `
+                        <a href="${place.metadata.source_url}" target="_blank" class="text-blue-500 hover:text-blue-700">
+                            <i class="fas fa-external-link-alt mr-1"></i>Source
+                        </a>
+                    ` : ''}
+                </div>
+            `;
+            
+            placesContainer.appendChild(placeCard);
+        });
+        
+        updatePagination(pagination);
+        paginationContainer.classList.remove('hidden');
+    }
+
+    // Update pagination controls
+    function updatePagination(pagination) {
+        const pageInfo = document.getElementById('pageInfo');
+        const prevPage = document.getElementById('prevPage');
+        const nextPage = document.getElementById('nextPage');
+        const showingStart = document.getElementById('showingStart');
+        const showingEnd = document.getElementById('showingEnd');
+        const showingTotal = document.getElementById('showingTotal');
+        
+        pageInfo.textContent = `Page ${pagination.page} of ${pagination.pages}`;
+        showingStart.textContent = ((pagination.page - 1) * pagination.per_page) + 1;
+        showingEnd.textContent = Math.min(pagination.page * pagination.per_page, pagination.total);
+        showingTotal.textContent = pagination.total;
+        
+        prevPage.disabled = pagination.page <= 1;
+        nextPage.disabled = pagination.page >= pagination.pages;
+    }
+
+    // Change page
+    function changePage(delta) {
+        const newPage = currentPage + delta;
+        if (newPage >= 1 && newPage <= totalPages) {
+            currentPage = newPage;
+            loadPlaces();
+        }
+    }
+
+    // Search places
+    function searchPlaces() {
+        const query = document.getElementById('searchInput').value.trim();
+        if (query) {
+            window.location.href = `/search?q=${encodeURIComponent(query)}`;
+        }
+    }
+
+    // Apply filters
+    function applyFilters() {
+        currentPage = 1; // Reset to first page
+        currentFilters = {
+            genre: document.getElementById('genreFilter').value,
+            sort_by: document.getElementById('sortBy').value
+        };
+        loadPlaces();
+    }
+
+    // Search on Enter key
+    document.getElementById('searchInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            searchPlaces();
+        }
+    });
+</script>
+
+<style>
+    .line-clamp-3 {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+    }
+</style>
+{% endblock %} 

@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Search Places - Video Information Extractor{% endblock %}
+
+{% block content %}
+<div class="space-y-8">
+    <!-- Search Header -->
+    <div class="text-center">
+        <h1 class="text-4xl font-bold text-gray-900 mb-4">
+            <i class="fas fa-search text-blue-500 mr-3"></i>Search Places
+        </h1>
+        <p class="text-xl text-gray-600 max-w-3xl mx-auto">
+            Search through all extracted places using natural language, place names, or genres.
+        </p>
+    </div>
+
+    <!-- Search Form -->
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <form id="searchForm" class="space-y-4">
+            <div class="grid md:grid-cols-3 gap-4">
+                <div class="md:col-span-2">
+                    <label for="searchQuery" class="block text-sm font-medium text-gray-700 mb-2">
+                        Search Query
+                    </label>
+                    <input type="text" id="searchQuery" name="q" 
+                           placeholder="e.g., Chinese restaurant with good atmosphere, outdoor activities, romantic date spots..."
+                           class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                           required>
+                </div>
+                
+                <div>
+                    <label for="searchType" class="block text-sm font-medium text-gray-700 mb-2">
+                        Search Type
+                    </label>
+                    <select id="searchType" name="type" 
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="semantic">Semantic Search</option>
+                        <option value="name">Place Name</option>
+                        <option value="genre">Genre</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <label for="searchLimit" class="text-sm font-medium text-gray-700">
+                        Results Limit:
+                    </label>
+                    <select id="searchLimit" name="limit" 
+                            class="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <option value="5">5</option>
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
+                
+                <button type="submit" class="bg-gradient-to-r from-blue-500 to-purple-600 text-white px-8 py-3 rounded-lg hover:from-blue-600 hover:to-purple-700 transition-all font-semibold">
+                    <i class="fas fa-search mr-2"></i>Search
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Search Results -->
+    <div id="searchResults" class="hidden">
+        <div class="bg-white rounded-lg shadow-lg p-6">
+            <div class="flex items-center justify-between mb-6">
+                <h3 class="text-2xl font-semibold text-gray-800">
+                    <i class="fas fa-list text-blue-500 mr-2"></i>Search Results
+                </h3>
+                <div class="text-sm text-gray-600">
+                    <span id="resultCount">0</span> results found
+                </div>
+            </div>
+            
+            <div id="resultsContainer" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <!-- Search Examples -->
+    <div class="bg-white rounded-lg shadow-lg p-6">
+        <h3 class="text-xl font-semibold text-gray-800 mb-4">
+            <i class="fas fa-lightbulb text-yellow-500 mr-2"></i>Search Examples
+        </h3>
+        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer" 
+                 onclick="setSearchExample('romantic restaurant for date night', 'semantic')">
+                <h4 class="font-medium text-gray-800 mb-2">Romantic Restaurants</h4>
+                <p class="text-sm text-gray-600">"romantic restaurant for date night"</p>
+            </div>
+            
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                 onclick="setSearchExample('outdoor adventure activities', 'semantic')">
+                <h4 class="font-medium text-gray-800 mb-2">Outdoor Activities</h4>
+                <p class="text-sm text-gray-600">"outdoor adventure activities"</p>
+            </div>
+            
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                 onclick="setSearchExample('authentic Italian food', 'semantic')">
+                <h4 class="font-medium text-gray-800 mb-2">Italian Cuisine</h4>
+                <p class="text-sm text-gray-600">"authentic Italian food"</p>
+            </div>
+            
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                 onclick="setSearchExample('restaurant', 'genre')">
+                <h4 class="font-medium text-gray-800 mb-2">All Restaurants</h4>
+                <p class="text-sm text-gray-600">Genre: "restaurant"</p>
+            </div>
+            
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                 onclick="setSearchExample('activity', 'genre')">
+                <h4 class="font-medium text-gray-800 mb-2">All Activities</h4>
+                <p class="text-sm text-gray-600">Genre: "activity"</p>
+            </div>
+            
+            <div class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow cursor-pointer"
+                 onclick="setSearchExample('China Pearl', 'name')">
+                <h4 class="font-medium text-gray-800 mb-2">Specific Place</h4>
+                <p class="text-sm text-gray-600">Name: "China Pearl"</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Search form submission
+    document.getElementById('searchForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        const formData = new FormData(this);
+        const query = formData.get('q');
+        const type = formData.get('type');
+        const limit = formData.get('limit');
+        
+        const submitBtn = this.querySelector('button[type="submit"]');
+        setLoading(submitBtn, true);
+        
+        try {
+            const response = await fetch(`/search?q=${encodeURIComponent(query)}&type=${type}&limit=${limit}`);
+            const result = await response.json();
+            
+            if (result.success) {
+                displaySearchResults(result);
+            } else {
+                showToast(result.error, 'error');
+            }
+        } catch (error) {
+            showToast('An error occurred while searching', 'error');
+        } finally {
+            setLoading(submitBtn, false);
+        }
+    });
+
+    // Display search results
+    function displaySearchResults(result) {
+        const searchResults = document.getElementById('searchResults');
+        const resultsContainer = document.getElementById('resultsContainer');
+        const resultCount = document.getElementById('resultCount');
+        
+        resultCount.textContent = result.count;
+        resultsContainer.innerHTML = '';
+        
+        if (result.results && result.results.length > 0) {
+            result.results.forEach((place, index) => {
+                const placeCard = document.createElement('div');
+                placeCard.className = 'border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow';
+                
+                const similarity = place.distance !== null ? (1 - place.distance).toFixed(3) : 'N/A';
+                
+                placeCard.innerHTML = `
+                    <div class="flex items-start justify-between mb-4">
+                        <div>
+                            <h4 class="text-xl font-semibold text-gray-800 mb-2">${place.metadata.place_name || 'Unknown Place'}</h4>
+                            <div class="flex items-center space-x-4 text-sm text-gray-600">
+                                <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded-full">
+                                    ${place.metadata.genre || 'Unknown'}
+                                </span>
+                                ${place.metadata.category_detail ? `
+                                    <span class="bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                                        ${place.metadata.category_detail}
+                                    </span>
+                                ` : ''}
+                                <span class="bg-purple-100 text-purple-800 px-2 py-1 rounded-full">
+                                    Similarity: ${similarity}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${place.metadata.address ? `
+                        <p class="text-gray-600 mb-3">
+                            <i class="fas fa-map-marker-alt mr-2 text-blue-500"></i>
+                            ${place.metadata.address}
+                        </p>
+                    ` : ''}
+                    
+                    <div class="mb-4">
+                        <h5 class="font-medium text-gray-700 mb-2">Key Takeaways (${place.metadata.takeaways_count}):</h5>
+                        <div class="text-sm text-gray-600">
+                            ${place.document.split('Key points: ')[1] || 'No takeaways available'}
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center justify-between text-xs text-gray-500">
+                        <span>
+                            <i class="fas fa-calendar mr-1"></i>
+                            Added: ${new Date(place.metadata.timestamp).toLocaleDateString()}
+                        </span>
+                        ${place.metadata.source_url ? `
+                            <a href="${place.metadata.source_url}" target="_blank" class="text-blue-500 hover:text-blue-700">
+                                <i class="fas fa-external-link-alt mr-1"></i>Source
+                            </a>
+                        ` : ''}
+                    </div>
+                `;
+                
+                resultsContainer.appendChild(placeCard);
+            });
+        } else {
+            resultsContainer.innerHTML = `
+                <div class="text-center py-12 text-gray-500">
+                    <i class="fas fa-search text-4xl mb-4"></i>
+                    <p class="text-lg">No results found</p>
+                    <p class="text-sm">Try adjusting your search query or search type</p>
+                </div>
+            `;
+        }
+        
+        searchResults.classList.remove('hidden');
+        searchResults.scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // Set search example
+    function setSearchExample(query, type) {
+        document.getElementById('searchQuery').value = query;
+        document.getElementById('searchType').value = type;
+        
+        // Trigger search
+        document.getElementById('searchForm').dispatchEvent(new Event('submit'));
+    }
+
+    // Auto-search on page load if query parameter exists
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const query = urlParams.get('q');
+        const type = urlParams.get('type') || 'semantic';
+        
+        if (query) {
+            document.getElementById('searchQuery').value = query;
+            document.getElementById('searchType').value = type;
+            document.getElementById('searchForm').dispatchEvent(new Event('submit'));
+        }
+    });
+</script>
+{% endblock %} 

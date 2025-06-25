@@ -135,5 +135,6 @@ result.json
 *.mov
 *.mkv
 temp/
-tmp/
-chroma_db/ 
+tmp/ 
+chroma_db/
+uploads/ 
