@@ -1,25 +1,19 @@
 import React, { useContext, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, Modal, TouchableOpacity, ScrollView, Alert } from 'react-native';
+import { View, Text, StyleSheet, FlatList, Modal, TouchableOpacity, Alert } from 'react-native';
 import { Button, TextInput, Card } from 'react-native-paper';
 import { AlbumsContext, Album } from '../context/AlbumsContext';
-import { PlacesContext, Place } from '../context/PlacesContext';
 import { Ionicons } from '@expo/vector-icons';
 
-const AlbumsScreen: React.FC = () => {
+const AlbumsScreen: React.FC = ({ navigation }: any) => {
   const albumsContext = useContext(AlbumsContext)!;
-  const { albums, addAlbum, deleteAlbum, removePlaceFromAlbums } = albumsContext;
-  const placesContext = useContext(PlacesContext)!;
-  const { allPlaces, deletePlace } = placesContext;
+  const { albums, addAlbum, deleteAlbum } = albumsContext;
   const [modalVisible, setModalVisible] = useState(false);
   const [newAlbumName, setNewAlbumName] = useState('');
-  const [selectedAlbum, setSelectedAlbum] = useState<Album | null>(null);
 
   // Add state for delete modals and loading
   const [deleteAlbumModalVisible, setDeleteAlbumModalVisible] = useState(false);
-  const [deletePlaceModalVisible, setDeletePlaceModalVisible] = useState(false);
   const [deleteLoading, setDeleteLoading] = useState(false);
   const [albumToDelete, setAlbumToDelete] = useState<Album | null>(null);
-  const [placeToDelete, setPlaceToDelete] = useState<Place | null>(null);
 
   const handleCreateAlbum = () => {
     if (!newAlbumName.trim()) return;
@@ -51,77 +45,6 @@ const AlbumsScreen: React.FC = () => {
     }
   };
 
-  const handleDeletePlace = async (place: Place) => {
-    setPlaceToDelete(place);
-    setDeletePlaceModalVisible(true);
-  };
-
-  const confirmDeletePlace = async () => {
-    if (!placeToDelete) return;
-    setDeleteLoading(true);
-    try {
-      console.log('Deleting place from album:', placeToDelete.id);
-      await deletePlace(placeToDelete.id);
-      await removePlaceFromAlbums(placeToDelete.id);
-      console.log('Place deleted successfully');
-      setDeletePlaceModalVisible(false);
-      setPlaceToDelete(null);
-      setSelectedAlbum(null); // Close the album modal
-    } catch (error) {
-      console.error('Error deleting place:', error);
-      Alert.alert('Error', 'Failed to delete place. Please try again.');
-    } finally {
-      setDeleteLoading(false);
-    }
-  };
-
-  const renderAlbumRestaurants = () => {
-    if (!selectedAlbum) return null;
-    const places = allPlaces.filter((place: Place) => selectedAlbum.placeIds.includes(place.id));
-    return (
-      <Modal
-        visible={!!selectedAlbum}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setSelectedAlbum(null)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalContent, { width: '90%', maxHeight: '80%' }]}> 
-            <Text style={styles.modalTitle}>{selectedAlbum.name}</Text>
-            <ScrollView style={{ width: '100%' }}>
-              {places.length === 0 ? (
-                <Text style={styles.emptyText}>No restaurants in this album yet.</Text>
-              ) : (
-                places.map((place: Place) => (
-                  <Card key={place.id} style={styles.albumCard}>
-                    <Card.Content style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <View>
-                        <Text style={styles.albumName}>{place.metadata.place_name}</Text>
-                        <Text style={styles.albumCount}>{place.metadata.genre}</Text>
-                        <Text style={styles.albumCount}>{place.metadata.address}</Text>
-                      </View>
-                      <Button
-                        mode="text"
-                        onPress={() => handleDeletePlace(place)}
-                        compact
-                        contentStyle={{ padding: 0 }}
-                      >
-                        <Ionicons name="trash" size={22} color="#F44336" />
-                      </Button>
-                    </Card.Content>
-                  </Card>
-                ))
-              )}
-            </ScrollView>
-            <Button mode="text" onPress={() => setSelectedAlbum(null)} style={{ marginTop: 12 }}>
-              Close
-            </Button>
-          </View>
-        </View>
-      </Modal>
-    );
-  };
-
   return (
     <View style={styles.container}>
       <Button
@@ -135,7 +58,7 @@ const AlbumsScreen: React.FC = () => {
         data={albums}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
-          <TouchableOpacity onPress={() => setSelectedAlbum(item)}>
+          <TouchableOpacity onPress={() => navigation.navigate('AlbumDetail', { album: item })}>
             <Card style={styles.albumCard}>
               <Card.Content style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                 <View>
@@ -217,41 +140,6 @@ const AlbumsScreen: React.FC = () => {
           </View>
         </View>
       </Modal>
-
-      {/* Delete Place Confirmation Modal */}
-      <Modal
-        visible={deletePlaceModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setDeletePlaceModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Delete Place?</Text>
-            <Text style={styles.modalText}>
-              Are you sure you want to delete "{placeToDelete?.metadata.place_name}"? This will remove it from all albums and cannot be undone.
-            </Text>
-            <Button
-              mode="contained"
-              loading={deleteLoading}
-              disabled={deleteLoading}
-              onPress={confirmDeletePlace}
-              style={[styles.modalButton, { backgroundColor: '#F44336' }]}
-            >
-              Delete Place
-            </Button>
-            <Button
-              mode="text"
-              disabled={deleteLoading}
-              onPress={() => setDeletePlaceModalVisible(false)}
-            >
-              Cancel
-            </Button>
-          </View>
-        </View>
-      </Modal>
-
-      {selectedAlbum && renderAlbumRestaurants()}
     </View>
   );
 };

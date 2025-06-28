@@ -37,7 +37,7 @@ const PlacesScreen: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(true);
+  const [hasMore, setHasMore] = useState(false);
 
   // Search state
   const [query, setQuery] = useState('');
@@ -63,12 +63,6 @@ const PlacesScreen: React.FC = () => {
   const { removePlaceFromAlbums } = albumsContext;
 
   const API_BASE_URL = 'http://192.168.1.14:8080';
-
-  const loadMore = () => {
-    if (hasMore && !loading) {
-      // fetchPlaces(page + 1, false);
-    }
-  };
 
   // --- Search logic ---
   const searchPlaces = async () => {
@@ -264,16 +258,6 @@ const PlacesScreen: React.FC = () => {
     </View>
   );
 
-  const renderFooter = () => {
-    if (!hasMore) return null;
-    return (
-      <View style={styles.loadingFooter}>
-        <ActivityIndicator size="small" color="#667eea" />
-        <Text style={styles.loadingText}>Loading more places...</Text>
-      </View>
-    );
-  };
-
   // --- Main render ---
   return (
     <KeyboardAvoidingView
@@ -347,10 +331,7 @@ const PlacesScreen: React.FC = () => {
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={refreshPlaces} />
             }
-            onEndReached={loadMore}
-            onEndReachedThreshold={0.1}
             ListEmptyComponent={renderEmptyState}
-            ListFooterComponent={renderFooter}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.listContainer}
           />

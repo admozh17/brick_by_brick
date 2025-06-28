@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
 import { Provider as PaperProvider } from 'react-native-paper';
@@ -11,8 +12,36 @@ import { PlacesProvider } from './src/context/PlacesContext';
 import PlacesScreen from './src/screens/PlacesScreen';
 import UploadScreen from './src/screens/UploadScreen';
 import SearchScreen from './src/screens/SearchScreen';
+import AlbumDetailScreen from './src/screens/AlbumDetailScreen';
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
+
+// Stack navigator for Albums tab
+const AlbumsStack = () => (
+  <Stack.Navigator
+    screenOptions={{
+      headerStyle: {
+        backgroundColor: '#23242A',
+      },
+      headerTintColor: '#fff',
+      headerTitleStyle: {
+        fontWeight: 'bold',
+      },
+    }}
+  >
+    <Stack.Screen 
+      name="AlbumsList" 
+      component={SearchScreen}
+      options={{ headerShown: false }}
+    />
+    <Stack.Screen 
+      name="AlbumDetail" 
+      component={AlbumDetailScreen}
+      options={{ headerShown: false }}
+    />
+  </Stack.Navigator>
+);
 
 export default function App() {
   return (
@@ -30,8 +59,8 @@ export default function App() {
                     iconName = focused ? 'map' : 'map-outline';
                   } else if (route.name === 'Upload') {
                     iconName = focused ? 'add-circle' : 'add-circle-outline';
-                  } else if (route.name === 'Search') {
-                    iconName = focused ? 'search' : 'search-outline';
+                  } else if (route.name === 'Albums') {
+                    iconName = focused ? 'albums' : 'albums-outline';
                   } else {
                     iconName = 'help-outline';
                   }
@@ -41,6 +70,10 @@ export default function App() {
                 tabBarActiveTintColor: '#667eea',
                 tabBarInactiveTintColor: 'gray',
                 headerShown: false,
+                tabBarStyle: {
+                  backgroundColor: '#23242A',
+                  borderTopColor: '#282A36',
+                },
               })}
             >
               <Tab.Screen 
@@ -54,8 +87,8 @@ export default function App() {
                 options={{ title: 'Upload Video' }}
               />
               <Tab.Screen 
-                name="Search" 
-                component={SearchScreen}
+                name="Albums" 
+                component={AlbumsStack}
                 options={{ title: 'Albums' }}
               />
             </Tab.Navigator>
