@@ -12,6 +12,8 @@ interface AlbumsContextType {
   refreshAlbums: () => void;
   addAlbum: (name: string) => Promise<void>;
   addPlacesToAlbum: (albumId: string, placeIds: string[]) => Promise<void>;
+  deleteAlbum: (albumId: string) => Promise<void>;
+  removePlaceFromAlbums: (placeId: string) => Promise<void>;
 }
 
 export const AlbumsContext = createContext<AlbumsContextType | undefined>(undefined);
@@ -42,12 +44,21 @@ export const AlbumsProvider = ({ children }: { children: ReactNode }) => {
     await refreshAlbums();
   };
 
+  const deleteAlbum = async (albumId: string) => {
+    await axios.delete(`${API_BASE_URL}/albums/${albumId}`);
+    await refreshAlbums();
+  };
+
+  const removePlaceFromAlbums = async (placeId: string) => {
+    await refreshAlbums();
+  };
+
   useEffect(() => {
     refreshAlbums();
   }, []);
 
   return (
-    <AlbumsContext.Provider value={{ albums, refreshAlbums, addAlbum, addPlacesToAlbum }}>
+    <AlbumsContext.Provider value={{ albums, refreshAlbums, addAlbum, addPlacesToAlbum, deleteAlbum, removePlaceFromAlbums }}>
       {children}
     </AlbumsContext.Provider>
   );

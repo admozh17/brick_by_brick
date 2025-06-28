@@ -310,5 +310,31 @@ def add_places_to_album():
     return jsonify({"success": False, "error": "Album not found"}), 404
 
 
+@app.route("/albums/<album_id>", methods=["DELETE"])
+def delete_album(album_id):
+    albums = load_albums()
+    new_albums = [a for a in albums if a["id"] != album_id]
+    save_albums(new_albums)
+    return jsonify({"success": True})
+
+
+@app.route("/places/<place_id>", methods=["DELETE"])
+def delete_place(place_id):
+    print(f"API DELETE /places/{place_id} called")
+    # Remove from vector DB
+    try:
+        vector_store.delete_place(place_id)
+    except Exception as e:
+        print(f"Error deleting from vector DB: {e}")
+        return jsonify({"success": False, "error": str(e)}), 500
+    # Remove from all albums
+    albums = load_albums()
+    for album in albums:
+        album["placeIds"] = [pid for pid in album["placeIds"] if pid != place_id]
+    save_albums(albums)
+    print(f"Place {place_id} deleted successfully")
+    return jsonify({"success": True})
+
+
 if __name__ == "__main__":
     app.run(debug=True, host="0.0.0.0", port=8080)

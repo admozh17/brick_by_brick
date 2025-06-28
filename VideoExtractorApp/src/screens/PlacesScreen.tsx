@@ -17,6 +17,7 @@ import { Card, Title, Paragraph, Chip, Button, TextInput } from 'react-native-pa
 import { Ionicons } from '@expo/vector-icons';
 import axios from 'axios';
 import { AlbumsContext, Album } from '../context/AlbumsContext';
+import { PlacesContext } from '../context/PlacesContext';
 
 interface Place {
   id: string;
@@ -33,7 +34,6 @@ interface Place {
 }
 
 const PlacesScreen: React.FC = () => {
-  const [places, setPlaces] = useState<Place[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [page, setPage] = useState(1);
@@ -48,56 +48,25 @@ const PlacesScreen: React.FC = () => {
   // Add state for selected cards
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  // Add state for delete modal
+  const [deleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
   const albumsContext = useContext(AlbumsContext)!;
   const { albums, addAlbum, addPlacesToAlbum } = albumsContext;
   const [albumModalVisible, setAlbumModalVisible] = useState(false);
   const [newAlbumName, setNewAlbumName] = useState('');
   const [albumSelectMode, setAlbumSelectMode] = useState(false);
 
+  const placesContext = useContext(PlacesContext)!;
+  const { allPlaces, deletePlace, refreshPlaces } = placesContext;
+  const { removePlaceFromAlbums } = albumsContext;
+
   const API_BASE_URL = 'http://192.168.1.14:8080';
-
-  const fetchPlaces = async (pageNum: number = 1, refresh: boolean = false) => {
-    try {
-      const response = await axios.get(`${API_BASE_URL}/places`, {
-        params: {
-          page: pageNum,
-          per_page: 20,
-        },
-      });
-
-      if (response.data.success) {
-        const newPlaces = response.data.places;
-        if (refresh) {
-          setPlaces(newPlaces);
-        } else {
-          setPlaces(prev => [...prev, ...newPlaces]);
-        }
-        setHasMore(newPlaces.length === 20);
-        setPage(pageNum);
-      } else {
-        Alert.alert('Error', response.data.error || 'Failed to fetch places');
-      }
-    } catch (error) {
-      console.error('Error fetching places:', error);
-      Alert.alert('Error', 'Failed to connect to server. Make sure the Flask app is running.');
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchPlaces(1, true);
-  }, []);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    fetchPlaces(1, true);
-  };
 
   const loadMore = () => {
     if (hasMore && !loading) {
-      fetchPlaces(page + 1, false);
+      // fetchPlaces(page + 1, false);
     }
   };
 
@@ -144,9 +113,8 @@ const PlacesScreen: React.FC = () => {
       { text: 'Cancel', style: 'cancel' },
       { text: 'Delete', style: 'destructive', onPress: async () => {
         try {
-          await axios.post(`${API_BASE_URL}/delete`, { id });
-          setPlaces(prev => prev.filter(p => p.id !== id));
-          setSearchResults(prev => prev.filter(p => p.id !== id));
+          await deletePlace(id);
+          await removePlaceFromAlbums(id);
         } catch (e) {
           Alert.alert('Error', 'Failed to delete place.');
         }
@@ -159,7 +127,7 @@ const PlacesScreen: React.FC = () => {
     <View style={styles.actionBar}>
       <Button
         mode="contained"
-        onPress={() => handleDeleteSelected()}
+        onPress={() => setDeleteModalVisible(true)}
         style={styles.actionButton}
         contentStyle={styles.actionButtonContent}
         icon={() => <Ionicons name="trash" size={20} color="#fff" style={{ marginRight: 8 }} />}
@@ -177,26 +145,6 @@ const PlacesScreen: React.FC = () => {
       </Button>
     </View>
   );
-
-  // Delete handler for all selected
-  const handleDeleteSelected = async () => {
-    if (selectedIds.size === 0) return;
-    Alert.alert('Delete Place(s)', 'Are you sure you want to delete the selected place(s)?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
-        try {
-          for (const id of selectedIds) {
-            await axios.post(`${API_BASE_URL}/delete`, { id });
-          }
-          setPlaces(prev => prev.filter(p => !selectedIds.has(p.id)));
-          setSearchResults(prev => prev.filter(p => !selectedIds.has(p.id)));
-          setSelectedIds(new Set());
-        } catch (e) {
-          Alert.alert('Error', 'Failed to delete place(s).');
-        }
-      }},
-    ]);
-  };
 
   // --- Renderers ---
   const renderPlaceCard = ({ item }: { item: Place }) => {
@@ -393,17 +341,18 @@ const PlacesScreen: React.FC = () => {
           )
         ) : (
           <FlatList
-            data={places}
+            data={allPlaces}
             renderItem={renderPlaceCard}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => String(item.id)}
             refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              <RefreshControl refreshing={refreshing} onRefresh={refreshPlaces} />
             }
             onEndReached={loadMore}
             onEndReachedThreshold={0.1}
             ListEmptyComponent={renderEmptyState}
             ListFooterComponent={renderFooter}
             showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContainer}
           />
         )}
       </ScrollView>
@@ -468,6 +417,60 @@ const PlacesScreen: React.FC = () => {
                 </Button>
               </>
             )}
+          </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={deleteModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDeleteModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Delete {selectedIds.size} place(s)?</Text>
+            <Text style={{ color: '#fff', marginBottom: 16 }}>Are you sure you want to delete the selected place(s)? This action cannot be undone.</Text>
+            <Button
+              mode="contained"
+              loading={deleteLoading}
+              disabled={deleteLoading || selectedIds.size === 0}
+              style={styles.modalButton}
+              onPress={async () => {
+                if (selectedIds.size === 0) return;
+                setDeleteLoading(true);
+                console.log('Confirm Delete pressed');
+                Alert.alert('Debug', 'Confirm Delete pressed');
+                try {
+                  console.log('Deleting IDs:', Array.from(selectedIds));
+                  for (const id of selectedIds) {
+                    console.log('Calling deletePlace for ID:', id);
+                    await deletePlace(id);
+                    console.log('deletePlace finished for ID:', id);
+                    await removePlaceFromAlbums(id);
+                  }
+                  setSelectedIds(new Set());
+                  setDeleteModalVisible(false);
+                  setDeleteLoading(false);
+                  await refreshPlaces();
+                  console.log('Delete complete, refreshed places.');
+                } catch (e) {
+                  setDeleteLoading(false);
+                  setDeleteModalVisible(false);
+                  Alert.alert('Error', 'Failed to delete place(s). ' + (e?.message || e));
+                  console.error('Delete error:', e);
+                }
+              }}
+            >
+              Confirm Delete
+            </Button>
+            <Button
+              mode="text"
+              disabled={deleteLoading}
+              onPress={() => setDeleteModalVisible(false)}
+            >
+              Cancel
+            </Button>
           </View>
         </View>
       </Modal>

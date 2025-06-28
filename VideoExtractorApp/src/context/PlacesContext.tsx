@@ -18,6 +18,7 @@ export interface Place {
 interface PlacesContextType {
   allPlaces: Place[];
   refreshPlaces: () => void;
+  deletePlace: (placeId: string) => Promise<void>;
 }
 
 export const PlacesContext = createContext<PlacesContextType | undefined>(undefined);
@@ -38,12 +39,17 @@ export const PlacesProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
+  const deletePlace = async (placeId: string) => {
+    await axios.delete(`http://192.168.1.14:8080/places/${placeId}`);
+    await fetchAllPlaces();
+  };
+
   useEffect(() => {
     fetchAllPlaces();
   }, []);
 
   return (
-    <PlacesContext.Provider value={{ allPlaces, refreshPlaces: fetchAllPlaces }}>
+    <PlacesContext.Provider value={{ allPlaces, refreshPlaces: fetchAllPlaces, deletePlace }}>
       {children}
     </PlacesContext.Provider>
   );
