@@ -39,7 +39,7 @@ const UploadScreen: React.FC = () => {
   const [progress, setProgress] = useState('');
   const [isConnected, setIsConnected] = useState<boolean | null>(null);
 
-  const API_BASE_URL = 'http://192.168.1.9:8080';
+  const API_BASE_URL = 'http://192.168.1.14:8080';
 
   // Test connection on component mount
   useEffect(() => {
@@ -134,7 +134,7 @@ const UploadScreen: React.FC = () => {
       if (error.response?.status === 500) {
         Alert.alert('Processing Error', 'Failed to process the video. Please check the URL and try again.');
       } else if (error.code === 'ECONNREFUSED' || error.code === 'ENOTFOUND') {
-        Alert.alert('Connection Error', 'Cannot connect to server. Make sure the Flask app is running on 192.168.1.9:8080');
+        Alert.alert('Connection Error', 'Cannot connect to server. Make sure the Flask app is running on 192.168.1.14:8080');
       } else {
         Alert.alert('Error', `An unexpected error occurred: ${error.message}`);
       }
@@ -150,7 +150,7 @@ const UploadScreen: React.FC = () => {
   };
 
   const renderPlaceCard = (place: ExtractedPlace, index: number) => (
-    <Card key={index} style={styles.placeCard} mode="outlined">
+    <Card key={index} style={styles.placeCard} elevation={3}>
       <Card.Content>
         <View style={styles.placeHeader}>
           <Title style={styles.placeName}>{place.place_name}</Title>
@@ -200,7 +200,7 @@ const UploadScreen: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <Card style={styles.uploadCard} mode="outlined">
+        <Card style={styles.uploadCard} elevation={4}>
           <Card.Content>
             <View style={styles.headerContainer}>
               <Ionicons name="add-circle" size={48} color="#667eea" />
@@ -293,7 +293,7 @@ const UploadScreen: React.FC = () => {
         )}
 
         {result && result.activities && result.activities.length === 0 && (
-          <Card style={styles.noResultsCard} mode="outlined">
+          <Card style={styles.noResultsCard} elevation={2}>
             <Card.Content style={styles.noResultsContent}>
               <Ionicons name="information-circle" size={48} color="#FF9800" />
               <Title style={styles.noResultsTitle}>No Places Found</Title>
@@ -312,7 +312,7 @@ const UploadScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#181A20',
   },
   scrollView: {
     flex: 1,
@@ -322,6 +322,13 @@ const styles = StyleSheet.create({
   },
   uploadCard: {
     marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: '#23242A',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
   },
   headerContainer: {
     alignItems: 'center',
@@ -331,10 +338,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     marginBottom: 8,
     textAlign: 'center',
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 22,
   },
   subtitle: {
     textAlign: 'center',
-    color: '#666',
+    color: '#A0A0A0',
     lineHeight: 20,
   },
   inputContainer: {
@@ -342,6 +352,9 @@ const styles = StyleSheet.create({
   },
   textInput: {
     marginBottom: 16,
+    backgroundColor: '#282A36',
+    color: '#FFFFFF',
+    borderRadius: 10,
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -350,12 +363,14 @@ const styles = StyleSheet.create({
   processButton: {
     flex: 1,
     backgroundColor: '#667eea',
+    borderRadius: 10,
   },
   buttonContent: {
     height: 48,
   },
   clearButton: {
     borderColor: '#667eea',
+    borderRadius: 10,
   },
   loadingContainer: {
     alignItems: 'center',
@@ -364,7 +379,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     textAlign: 'center',
-    color: '#666',
+    color: '#A0A0A0',
     paddingHorizontal: 16,
   },
   resultsContainer: {
@@ -372,10 +387,17 @@ const styles = StyleSheet.create({
   },
   resultsTitle: {
     marginBottom: 16,
-    color: '#4CAF50',
+    color: '#27ae60',
   },
   placeCard: {
     marginBottom: 12,
+    borderRadius: 14,
+    backgroundColor: '#23242A',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
   },
   placeHeader: {
     flexDirection: 'row',
@@ -387,19 +409,20 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#FFFFFF',
   },
   genreChip: {
-    backgroundColor: '#e3f2fd',
-    borderColor: '#2196f3',
+    backgroundColor: '#282A36',
+    borderColor: '#667eea',
   },
   category: {
     fontSize: 14,
-    color: '#666',
+    color: '#A0A0A0',
     marginBottom: 4,
   },
   address: {
     fontSize: 14,
-    color: '#666',
+    color: '#A0A0A0',
     marginBottom: 12,
   },
   takeawaysContainer: {
@@ -409,6 +432,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     marginBottom: 8,
+    color: '#FFFFFF',
   },
   takeawayItem: {
     flexDirection: 'row',
@@ -419,11 +443,18 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: 8,
     fontSize: 13,
-    color: '#666',
+    color: '#A0A0A0',
     lineHeight: 18,
   },
   noResultsCard: {
     marginTop: 16,
+    borderRadius: 14,
+    backgroundColor: '#23242A',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 5,
+    shadowOffset: { width: 0, height: 2 },
   },
   noResultsContent: {
     alignItems: 'center',
@@ -432,11 +463,11 @@ const styles = StyleSheet.create({
   noResultsTitle: {
     marginTop: 12,
     marginBottom: 8,
-    color: '#FF9800',
+    color: '#f39c12',
   },
   noResultsText: {
     textAlign: 'center',
-    color: '#666',
+    color: '#A0A0A0',
     lineHeight: 20,
   },
   retryButton: {
@@ -447,14 +478,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
     padding: 12,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#23242A',
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#282A36',
   },
   connectionText: {
     marginLeft: 8,
     marginRight: 8,
     fontSize: 14,
     fontWeight: '500',
+    color: '#A0A0A0',
   },
 });
 

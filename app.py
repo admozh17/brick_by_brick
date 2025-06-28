@@ -11,6 +11,7 @@ import traceback
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List
+import uuid
 
 from flask import Flask, render_template, request, jsonify, send_from_directory
 from werkzeug.utils import secure_filename
@@ -34,6 +35,20 @@ UPLOAD_FOLDER = Path("uploads")
 UPLOAD_FOLDER.mkdir(exist_ok=True)
 
 ALLOWED_EXTENSIONS = {"mp4", "avi", "mov", "mkv", "webm"}
+
+ALBUMS_FILE = Path("albums.json")
+
+
+def load_albums():
+    if ALBUMS_FILE.exists():
+        with open(ALBUMS_FILE, "r") as f:
+            return json.load(f)
+    return []
+
+
+def save_albums(albums):
+    with open(ALBUMS_FILE, "w") as f:
+        json.dump(albums, f)
 
 
 def allowed_file(filename):
@@ -259,6 +274,40 @@ def search_page():
 def places_page():
     """Places browsing page."""
     return render_template("places.html")
+
+
+@app.route("/albums", methods=["GET"])
+def get_albums():
+    albums = load_albums()
+    return jsonify({"success": True, "albums": albums})
+
+
+@app.route("/albums", methods=["POST"])
+def create_album():
+    data = request.get_json()
+    name = data.get("name")
+    if not name:
+        return jsonify({"success": False, "error": "Album name required"}), 400
+    albums = load_albums()
+    album_id = str(uuid.uuid4())
+    new_album = {"id": album_id, "name": name, "placeIds": []}
+    albums.append(new_album)
+    save_albums(albums)
+    return jsonify({"success": True, "album": new_album})
+
+
+@app.route("/albums/add_places", methods=["POST"])
+def add_places_to_album():
+    data = request.get_json()
+    album_id = data.get("albumId")
+    place_ids = data.get("placeIds", [])
+    albums = load_albums()
+    for album in albums:
+        if album["id"] == album_id:
+            album["placeIds"] = list(set(album["placeIds"] + place_ids))
+            save_albums(albums)
+            return jsonify({"success": True, "album": album})
+    return jsonify({"success": False, "error": "Album not found"}), 404
 
 
 if __name__ == "__main__":
